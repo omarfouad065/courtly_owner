@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AddCourtView extends StatefulWidget {
   const AddCourtView({Key? key}) : super(key: key);
@@ -95,11 +97,71 @@ class _AddCourtViewState extends State<AddCourtView> {
     super.dispose();
   }
 
-  void _submitForm() {
+  void _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // TODO: Implement Firestore save logic
-      // Use _imagePaths for uploaded images
-      // Use _availability for advanced picker values
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('User not logged in.')));
+          return;
+        }
+        final now = DateTime.now();
+        final doc = <String, dynamic>{
+          'name': _nameController.text.trim(),
+          'address': _addressController.text.trim(),
+          'location': _pickedLocation != null
+              ? '[${_pickedLocation!.latitude}° N, ${_pickedLocation!.longitude}° W]'
+              : '',
+          'category': _selectedCategory,
+          'description': _descriptionController.text.trim(),
+          'availability': _availability.map(
+            (day, slots) => MapEntry(
+              day,
+              slots
+                  .map(
+                    (slot) =>
+                        '${slot['start']!.format(context)}-${slot['end']!.format(context)}',
+                  )
+                  .toList(),
+            ),
+          ),
+          'facilities': {
+            'cafe': _cafe,
+            'changing_rooms': _changingRooms,
+            'lighting': _lighting,
+            'parking': _parking,
+            'showers': _showers,
+            'maxPlayers': _maxPlayersController.text.trim(),
+          },
+          'images': _imagePaths.isNotEmpty
+              ? _imagePaths
+              : [
+                  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?ixlib=rb-4.0.3',
+                ],
+          'pricing': {
+            'hourly': int.tryParse(_hourlyController.text.trim()) ?? 0,
+            'daily': int.tryParse(_dailyController.text.trim()) ?? 0,
+            'weekly': int.tryParse(_weeklyController.text.trim()) ?? 0,
+          },
+          'ownerId': user.uid,
+          'isActive': true,
+          'createdAt': now,
+          'updatedAt': now,
+          'rating': 0,
+          'reviewCount': 0,
+        };
+        await FirebaseFirestore.instance.collection('venues').add(doc);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Court saved successfully!')),
+        );
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving court: $e')));
+      }
     }
   }
 
