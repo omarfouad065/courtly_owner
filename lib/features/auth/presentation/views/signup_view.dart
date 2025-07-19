@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../home/presentation/views/home_view.dart';
 
 class SignupView extends StatefulWidget {
   const SignupView({super.key});
@@ -35,10 +36,12 @@ class _SignupViewState extends State<SignupView> {
       final name = _nameController.text.trim();
       final email = _emailController.text.trim();
       final password = _passwordController.text;
+
       // Create user with Firebase Auth
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
       final uid = userCredential.user!.uid;
+
       // Add user info to Firestore with role: venue_owner
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'id': uid,
@@ -48,7 +51,14 @@ class _SignupViewState extends State<SignupView> {
         'isActive': true,
         'createdAt': FieldValue.serverTimestamp(),
       });
-      // TODO: Navigate to home or show success
+
+      // Navigate to home after successful signup
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeView()),
+        );
+      }
     } on FirebaseAuthException catch (e) {
       setState(() {
         _error = e.message;

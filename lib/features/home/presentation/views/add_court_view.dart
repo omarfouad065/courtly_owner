@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AddCourtView extends StatefulWidget {
-  const AddCourtView({Key? key}) : super(key: key);
+  const AddCourtView({super.key});
 
   @override
   State<AddCourtView> createState() => _AddCourtViewState();
@@ -46,13 +46,7 @@ class _AddCourtViewState extends State<AddCourtView> {
     return days
         .map(
           (e) =>
-              '${e.key[0].toUpperCase()}${e.key.substring(1)}: ' +
-              e.value
-                  .map(
-                    (slot) =>
-                        '${slot['start']!.format(context)}-${slot['end']!.format(context)}',
-                  )
-                  .join(', '),
+              '${e.key[0].toUpperCase()}${e.key.substring(1)}: ${e.value.map((slot) => '${slot['start']!.format(context)}-${slot['end']!.format(context)}').join(', ')}',
         )
         .join(' | ');
   }
@@ -70,7 +64,7 @@ class _AddCourtViewState extends State<AddCourtView> {
   }
 
   // Images (placeholder for file upload)
-  List<String> _imagePaths = [];
+  final List<String> _imagePaths = [];
 
   String? _selectedCategory;
   static const List<String> _categories = [

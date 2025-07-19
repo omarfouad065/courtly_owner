@@ -1,6 +1,8 @@
 import 'package:courtly_owner/features/auth/presentation/views/auth_view.dart';
+import 'package:courtly_owner/features/home/presentation/views/home_view.dart';
 import 'package:flutter/material.dart';
 import 'package:courtly_owner/core/constants/app_colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -29,9 +31,21 @@ class _SplashViewState extends State<SplashView>
   Future<void> _navigateNext() async {
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    Navigator.of(
-      context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => const AuthView()));
+
+    // Check if user is already authenticated
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      // User is logged in, go directly to home
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeView()));
+    } else {
+      // User is not logged in, go to auth screen
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const AuthView()));
+    }
   }
 
   @override
