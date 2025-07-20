@@ -209,31 +209,6 @@ class HomeView extends StatelessWidget {
                                           ),
                                         ),
                                         onPressed: () {
-                                          // TODO: Implement view/edit navigation
-                                        },
-                                        child: const Text(
-                                          'View',
-                                          style: TextStyle(fontSize: 13),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    SizedBox(
-                                      width: 40,
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.blue,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 4,
-                                          ),
-                                        ),
-                                        onPressed: () {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
@@ -245,9 +220,9 @@ class HomeView extends StatelessWidget {
                                             ),
                                           );
                                         },
-                                        child: const Icon(
-                                          Icons.settings,
-                                          size: 16,
+                                        child: const Text(
+                                          'View',
+                                          style: TextStyle(fontSize: 13),
                                         ),
                                       ),
                                     ),
