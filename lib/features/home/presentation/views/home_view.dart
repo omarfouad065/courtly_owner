@@ -251,6 +251,99 @@ class HomeView extends StatelessWidget {
                                         ),
                                       ),
                                     ),
+                                    const SizedBox(width: 4),
+                                    SizedBox(
+                                      width: 40,
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 4,
+                                          ),
+                                        ),
+                                        onPressed: () async {
+                                          final venueId = venues[index].id;
+                                          final bookings =
+                                              await FirebaseFirestore.instance
+                                                  .collection('bookings')
+                                                  .where(
+                                                    'venueId',
+                                                    isEqualTo: venueId,
+                                                  )
+                                                  .limit(1)
+                                                  .get();
+                                          if (bookings.docs.isNotEmpty) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Cannot delete: There are bookings for this court.',
+                                                ),
+                                              ),
+                                            );
+                                            return;
+                                          }
+                                          final confirm = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: const Text('Delete Court'),
+                                              content: const Text(
+                                                'Are you sure you want to delete this court? This action cannot be undone.',
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(
+                                                        context,
+                                                        false,
+                                                      ),
+                                                  child: const Text('Cancel'),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(
+                                                        context,
+                                                        true,
+                                                      ),
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                        backgroundColor:
+                                                            Colors.red,
+                                                      ),
+                                                  child: const Text('Delete'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (confirm == true) {
+                                            await FirebaseFirestore.instance
+                                                .collection('venues')
+                                                .doc(venueId)
+                                                .delete();
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Court deleted successfully.',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        child: const Icon(
+                                          Icons.delete,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],

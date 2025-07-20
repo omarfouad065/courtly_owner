@@ -106,8 +106,8 @@ class _AddCourtViewState extends State<AddCourtView> {
           'name': _nameController.text.trim(),
           'address': _addressController.text.trim(),
           'location': _pickedLocation != null
-              ? '[${_pickedLocation!.latitude}° N, ${_pickedLocation!.longitude}° W]'
-              : '',
+              ? GeoPoint(_pickedLocation!.latitude, _pickedLocation!.longitude)
+              : null,
           'category': _selectedCategory,
           'description': _descriptionController.text.trim(),
           'availability': _availability.map(
