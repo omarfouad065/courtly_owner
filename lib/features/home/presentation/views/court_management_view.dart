@@ -105,6 +105,13 @@ class _CourtManagementViewState extends State<CourtManagementView>
     return null;
   }
 
+  // Helper to format TimeOfDay as 24-hour string
+  String _formatTimeOfDay24(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
   Future<void> _updateAvailability() async {
     try {
       final availabilityMap = _availability.map(
@@ -113,7 +120,7 @@ class _CourtManagementViewState extends State<CourtManagementView>
           slots
               .map(
                 (slot) =>
-                    '${slot['start']!.format(context)}-${slot['end']!.format(context)}',
+                    '${_formatTimeOfDay24(slot['start']!)}-${_formatTimeOfDay24(slot['end']!)}',
               )
               .toList(),
         ),
