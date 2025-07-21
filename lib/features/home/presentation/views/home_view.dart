@@ -4,9 +4,36 @@ import 'add_court_view.dart';
 import 'court_management_view.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'booking_status_notifier.dart';
+import 'notification_center_view.dart';
 
-class HomeView extends StatelessWidget {
+class HomeView extends StatefulWidget {
   const HomeView({super.key});
+
+  @override
+  State<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<HomeView> {
+  final BookingStatusNotifier _notifier = BookingStatusNotifier();
+  bool _initialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _notifier.initialize().then((_) {
+        _notifier.startListening();
+      });
+      _initialized = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _notifier.stopListening();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +64,21 @@ class HomeView extends StatelessWidget {
         ),
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.notifications,
+              color: AppColors.primary,
+              size: 28,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const NotificationCenterView(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(
               Icons.account_circle_rounded,

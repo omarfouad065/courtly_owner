@@ -39,6 +39,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_maps_flutter: ^2.5.0
   geolocator: ^10.1.0
+  flutter_local_notifications: ^19.3.1
 
 dev_dependencies:
   flutter_test:
