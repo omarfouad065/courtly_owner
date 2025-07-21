@@ -229,13 +229,52 @@ class _CourtManagementViewState extends State<CourtManagementView>
             ),
           ),
           const SizedBox(height: 8),
-          _buildStatsCard(),
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('bookings')
+                .where('venueId', isEqualTo: widget.venueId)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return _buildStatsCard(0, 0, 0);
+              }
+              final bookings = snapshot.data!.docs;
+              final now = DateTime.now();
+              final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+              int totalBookings = 0;
+              int thisWeek = 0;
+              double revenue = 0;
+              for (var doc in bookings) {
+                final data = doc.data() as Map<String, dynamic>;
+                final status = (data['status'] ?? 'pending')
+                    .toString()
+                    .toLowerCase();
+                if (status == 'confirmed') {
+                  totalBookings++;
+                  final startTime = (data['startTime'] as Timestamp).toDate();
+                  if (startTime.isAfter(startOfWeek)) {
+                    thisWeek++;
+                  }
+                  final amount = data['totalAmount'];
+                  if (amount is int) {
+                    revenue += amount.toDouble();
+                  } else if (amount is double) {
+                    revenue += amount;
+                  }
+                }
+              }
+              return _buildStatsCard(totalBookings, thisWeek, revenue);
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatsCard() {
+  Widget _buildStatsCard(int totalBookings, int thisWeek, double revenue) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -244,9 +283,9 @@ class _CourtManagementViewState extends State<CourtManagementView>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildStatItem('Total Bookings', '0'),
-                _buildStatItem('This Week', '0'),
-                _buildStatItem('Revenue', '\$0'),
+                _buildStatItem('Total Bookings', totalBookings.toString()),
+                _buildStatItem('This Week', thisWeek.toString()),
+                _buildStatItem('Revenue', ' EGP ${revenue.toStringAsFixed(2)}'),
               ],
             ),
           ],
@@ -383,9 +422,26 @@ class _CourtManagementViewState extends State<CourtManagementView>
                   backgroundColor: _getStatusColor(status),
                   child: Icon(_getStatusIcon(status), color: Colors.white),
                 ),
-                title: Text(
-                  booking['userName'] ?? 'Unknown User',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                title: FutureBuilder<DocumentSnapshot>(
+                  future: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(booking['userId'])
+                      .get(),
+                  builder: (context, userSnapshot) {
+                    if (userSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Text('Loading...');
+                    }
+                    if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+                      return const Text('Unknown User');
+                    }
+                    final userData =
+                        userSnapshot.data!.data() as Map<String, dynamic>;
+                    return Text(
+                      userData['name'] ?? 'Unknown User',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    );
+                  },
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -403,7 +459,7 @@ class _CourtManagementViewState extends State<CourtManagementView>
                   ],
                 ),
                 trailing: Text(
-                  '\$${booking['totalPrice']?.toString() ?? '0'}',
+                  'EGP ${booking['totalAmount']?.toString() ?? '0'}',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
