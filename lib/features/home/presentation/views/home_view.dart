@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'booking_status_notifier.dart';
 import 'notification_center_view.dart';
+import 'package:badges/badges.dart' as badges;
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -37,6 +38,7 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -64,21 +66,44 @@ class _HomeViewState extends State<HomeView> {
         ),
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications,
-              color: AppColors.primary,
-              size: 28,
+          if (user != null)
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user.uid)
+                  .collection('notifications')
+                  .where('read', isEqualTo: false)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                int unreadCount = 0;
+                if (snapshot.hasData) {
+                  unreadCount = snapshot.data!.docs.length;
+                }
+                return badges.Badge(
+                  showBadge: unreadCount > 0,
+                  badgeContent: Text(
+                    unreadCount.toString(),
+                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                  ),
+                  position: badges.BadgePosition.topEnd(top: -4, end: -4),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.notifications,
+                      color: AppColors.primary,
+                      size: 28,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationCenterView(),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
             ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const NotificationCenterView(),
-                ),
-              );
-            },
-          ),
           IconButton(
             icon: const Icon(
               Icons.account_circle_rounded,

@@ -40,6 +40,7 @@ dependencies:
   google_maps_flutter: ^2.5.0
   geolocator: ^10.1.0
   flutter_local_notifications: ^19.3.1
+  badges: ^3.1.2
 
 dev_dependencies:
   flutter_test:
