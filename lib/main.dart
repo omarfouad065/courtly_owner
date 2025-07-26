@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/constants/app_colors.dart';
+import 'core/services/supabase_service.dart';
 import 'features/splash/presentation/views/splash_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize Supabase
+  await SupabaseService.initialize();
+  await SupabaseService.ensureBucketExists();
+
   runApp(const MyApp());
 }
 

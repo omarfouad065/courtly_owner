@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
+import '../../../../core/services/supabase_service.dart';
+import '../../../../core/widgets/image_picker_widget.dart';
 
 class AddCourtView extends StatefulWidget {
   const AddCourtView({super.key});
@@ -63,8 +66,9 @@ class _AddCourtViewState extends State<AddCourtView> {
     }
   }
 
-  // Images (placeholder for file upload)
+  // Images
   final List<String> _imagePaths = [];
+  final List<File> _selectedImageFiles = [];
 
   String? _selectedCategory;
   static const List<String> _categories = [
@@ -101,6 +105,34 @@ class _AddCourtViewState extends State<AddCourtView> {
           ).showSnackBar(const SnackBar(content: Text('User not logged in.')));
           return;
         }
+
+        // Show loading dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) =>
+              const Center(child: CircularProgressIndicator()),
+        );
+
+        // Upload images to Supabase if any selected
+        List<String> finalImageUrls = List.from(_imagePaths);
+
+        if (_selectedImageFiles.isNotEmpty) {
+          final courtId = DateTime.now().millisecondsSinceEpoch.toString();
+          final uploadedUrls = await SupabaseService.uploadImages(
+            imageFiles: _selectedImageFiles,
+            courtId: courtId,
+          );
+          finalImageUrls.addAll(uploadedUrls);
+        }
+
+        // If no images, use default
+        if (finalImageUrls.isEmpty) {
+          finalImageUrls = [
+            'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?ixlib=rb-4.0.3',
+          ];
+        }
+
         final now = DateTime.now();
         final doc = <String, dynamic>{
           'name': _nameController.text.trim(),
@@ -129,11 +161,7 @@ class _AddCourtViewState extends State<AddCourtView> {
             'showers': _showers,
             'maxPlayers': _maxPlayersController.text.trim(),
           },
-          'images': _imagePaths.isNotEmpty
-              ? _imagePaths
-              : [
-                  'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?ixlib=rb-4.0.3',
-                ],
+          'images': finalImageUrls,
           'pricing': {
             'hourly': int.tryParse(_hourlyController.text.trim()) ?? 0,
             'daily': int.tryParse(_dailyController.text.trim()) ?? 0,
@@ -147,12 +175,20 @@ class _AddCourtViewState extends State<AddCourtView> {
           'reviewCount': 0,
           'approved': false,
         };
+
         await FirebaseFirestore.instance.collection('venues').add(doc);
+
+        // Hide loading dialog
+        Navigator.pop(context);
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Court saved successfully!')),
         );
         Navigator.pop(context);
       } catch (e) {
+        // Hide loading dialog
+        Navigator.pop(context);
+
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error saving court: $e')));
@@ -266,12 +302,22 @@ class _AddCourtViewState extends State<AddCourtView> {
                 validator: (v) => v == null || v.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
-              const Text('Images (file upload placeholder)'),
-              TextButton(
-                onPressed: () {
-                  // TODO: Implement file picker for images
+              ImagePickerWidget(
+                initialImages: _imagePaths,
+                onImagesChanged: (images) {
+                  setState(() {
+                    _imagePaths.clear();
+                    _imagePaths.addAll(images);
+                  });
                 },
-                child: const Text('Upload Images'),
+                onFilesChanged: (files) {
+                  setState(() {
+                    _selectedImageFiles.clear();
+                    _selectedImageFiles.addAll(files);
+                  });
+                },
+                maxImages: 5,
+                imageSize: 100,
               ),
               const SizedBox(height: 16),
               const Text('Pricing'),
