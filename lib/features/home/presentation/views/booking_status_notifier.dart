@@ -9,7 +9,9 @@ class BookingStatusNotifier {
       FlutterLocalNotificationsPlugin();
   StreamSubscription<QuerySnapshot>? _bookingSubscription;
   StreamSubscription<QuerySnapshot>? _venueSubscription;
+  StreamSubscription<QuerySnapshot>? _approvalSubscription;
   final Map<String, String> _lastStatuses = {};
+  final Map<String, bool> _lastApprovalStatus = {};
   List<String> _venueIds = [];
   Map<String, String> _venueNames = {};
   String? _ownerId;
@@ -38,9 +40,10 @@ class BookingStatusNotifier {
           _venueIds = venueSnapshot.docs.map((doc) => doc.id).toList();
           _venueNames = {
             for (var doc in venueSnapshot.docs)
-              doc.id: (doc.data() as Map<String, dynamic>)['name'] ?? 'Court',
+              doc.id: (doc.data())['name'] ?? 'Court',
           };
           _listenToBookings();
+          _listenToApprovals(venueSnapshot.docs);
         });
   }
 
@@ -57,7 +60,7 @@ class BookingStatusNotifier {
         .snapshots()
         .listen((snapshot) async {
           for (final doc in snapshot.docs) {
-            final data = doc.data() as Map<String, dynamic>;
+            final data = doc.data();
             final status = (data['status'] ?? 'pending')
                 .toString()
                 .toLowerCase();
@@ -93,6 +96,24 @@ class BookingStatusNotifier {
         });
   }
 
+  void _listenToApprovals(List<QueryDocumentSnapshot> docs) {
+    for (final doc in docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      final approved = data['approved'] == true;
+      final venueId = doc.id;
+      final lastApproved = _lastApprovalStatus[venueId] ?? false;
+      if (!lastApproved && approved) {
+        // Approval just changed to true
+        final courtName = data['name'] ?? 'Court';
+        _showApprovalNotification(courtName);
+        _writeNotificationToFirestore(
+          'Your court "$courtName" has been approved!',
+        );
+      }
+      _lastApprovalStatus[venueId] = approved;
+    }
+  }
+
   void stopListening() {
     _bookingSubscription?.cancel();
     _bookingSubscription = null;
@@ -122,6 +143,28 @@ class BookingStatusNotifier {
       '$userName has a confirmed booking for $courtName.',
       platformChannelSpecifics,
       payload: 'booking_confirmed',
+    );
+  }
+
+  Future<void> _showApprovalNotification(String courtName) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'approval_channel',
+          'Approval Notifications',
+          channelDescription: 'Notification channel for court approval updates',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: false,
+        );
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    );
+    await _notificationsPlugin.show(
+      1,
+      'Court Approved!',
+      'Your court "$courtName" has been approved.',
+      platformChannelSpecifics,
+      payload: 'court_approved',
     );
   }
 

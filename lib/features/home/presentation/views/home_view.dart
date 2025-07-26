@@ -175,6 +175,7 @@ class _HomeViewState extends State<HomeView> {
                       elevation: 4,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           ClipRRect(
                             borderRadius: const BorderRadius.vertical(
@@ -190,6 +191,7 @@ class _HomeViewState extends State<HomeView> {
                             padding: const EdgeInsets.all(6.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
                                   venue['name'] ?? '',
@@ -200,14 +202,38 @@ class _HomeViewState extends State<HomeView> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(
-                                  height: 1,
-                                ), // Reduced from 2 to 1
+                                Row(
+                                  children: [
+                                    Icon(
+                                      venue['approved'] == true
+                                          ? Icons.verified
+                                          : Icons.hourglass_bottom,
+                                      color: venue['approved'] == true
+                                          ? Colors.green
+                                          : Colors.orange,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      venue['approved'] == true
+                                          ? 'Approved'
+                                          : 'Pending',
+                                      style: TextStyle(
+                                        color: venue['approved'] == true
+                                            ? Colors.green
+                                            : Colors.orange,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 1),
                                 Text(
                                   (() {
                                     final loc = venue['location'];
                                     if (loc != null && loc is GeoPoint) {
-                                      return 'Lat:  ${loc.latitude.toStringAsFixed(4)}, Lng: ${loc.longitude.toStringAsFixed(4)}';
+                                      return 'Lat:  	${loc.latitude.toStringAsFixed(4)}, Lng: ${loc.longitude.toStringAsFixed(4)}';
                                     } else if (loc != null && loc is String) {
                                       return loc;
                                     } else {
@@ -221,9 +247,7 @@ class _HomeViewState extends State<HomeView> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(
-                                  height: 1,
-                                ), // Reduced from 2 to 1
+                                const SizedBox(height: 1),
                                 Row(
                                   children: [
                                     Icon(
@@ -238,158 +262,122 @@ class _HomeViewState extends State<HomeView> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(
-                                  height: 1,
-                                ), // Reduced from 2 to 1
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.star,
-                                      size: 12,
-                                      color: Colors.amber,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      (venue['rating'] ?? 0).toString(),
-                                      style: const TextStyle(fontSize: 11),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(
-                                  height: 1,
-                                ), // Reduced from 6 to 1
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.primary,
-                                          foregroundColor:
-                                              AppColors.textPrimary,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 4, // Reduced from 6 to 4
-                                          ),
-                                        ),
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  CourtManagementView(
-                                                    venueId: venues[index].id,
-                                                    venueData: venue,
-                                                  ),
-                                            ),
-                                          );
-                                        },
-                                        child: const Text(
-                                          'View',
-                                          style: TextStyle(fontSize: 13),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    SizedBox(
-                                      width: 40,
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 4,
-                                          ),
-                                        ),
-                                        onPressed: () async {
-                                          final venueId = venues[index].id;
-                                          final bookings =
-                                              await FirebaseFirestore.instance
-                                                  .collection('bookings')
-                                                  .where(
-                                                    'venueId',
-                                                    isEqualTo: venueId,
-                                                  )
-                                                  .limit(1)
-                                                  .get();
-                                          if (bookings.docs.isNotEmpty) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  'Cannot delete: There are bookings for this court.',
-                                                ),
-                                              ),
-                                            );
-                                            return;
-                                          }
-                                          final confirm = await showDialog<bool>(
-                                            context: context,
-                                            builder: (context) => AlertDialog(
-                                              title: const Text('Delete Court'),
-                                              content: const Text(
-                                                'Are you sure you want to delete this court? This action cannot be undone.',
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(
-                                                        context,
-                                                        false,
-                                                      ),
-                                                  child: const Text('Cancel'),
-                                                ),
-                                                ElevatedButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(
-                                                        context,
-                                                        true,
-                                                      ),
-                                                  style:
-                                                      ElevatedButton.styleFrom(
-                                                        backgroundColor:
-                                                            Colors.red,
-                                                      ),
-                                                  child: const Text('Delete'),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                          if (confirm == true) {
-                                            await FirebaseFirestore.instance
-                                                .collection('venues')
-                                                .doc(venueId)
-                                                .delete();
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  'Court deleted successfully.',
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                        },
-                                        child: const Icon(
-                                          Icons.delete,
-                                          size: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                const SizedBox(height: 1),
+                                // Add more widgets here as needed for dynamic content
                               ],
                             ),
+                          ),
+                          const SizedBox(height: 1), // Reduced from 2 to 1
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: AppColors.textPrimary,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4, // Reduced from 6 to 4
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            CourtManagementView(
+                                              venueId: venues[index].id,
+                                              venueData: venue,
+                                            ),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text(
+                                    'View',
+                                    style: TextStyle(fontSize: 13),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              SizedBox(
+                                width: 40,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    final venueId = venues[index].id;
+                                    final bookings = await FirebaseFirestore
+                                        .instance
+                                        .collection('bookings')
+                                        .where('venueId', isEqualTo: venueId)
+                                        .limit(1)
+                                        .get();
+                                    if (bookings.docs.isNotEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Cannot delete: There are bookings for this court.',
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text('Delete Court'),
+                                        content: const Text(
+                                          'Are you sure you want to delete this court? This action cannot be undone.',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, true),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                            ),
+                                            child: const Text('Delete'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm == true) {
+                                      await FirebaseFirestore.instance
+                                          .collection('venues')
+                                          .doc(venueId)
+                                          .delete();
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Court deleted successfully.',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: const Icon(Icons.delete, size: 16),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

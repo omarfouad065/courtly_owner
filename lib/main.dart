@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/constants/app_colors.dart';
-import 'features/home/presentation/views/home_view.dart';
 import 'features/splash/presentation/views/splash_view.dart';
 
 void main() async {

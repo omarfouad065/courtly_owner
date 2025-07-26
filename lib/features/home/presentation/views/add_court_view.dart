@@ -145,6 +145,7 @@ class _AddCourtViewState extends State<AddCourtView> {
           'updatedAt': now,
           'rating': 0,
           'reviewCount': 0,
+          'approved': false,
         };
         await FirebaseFirestore.instance.collection('venues').add(doc);
         ScaffoldMessenger.of(context).showSnackBar(
