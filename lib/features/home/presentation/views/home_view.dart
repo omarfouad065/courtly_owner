@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'booking_status_notifier.dart';
 import 'notification_center_view.dart';
 import 'package:badges/badges.dart' as badges;
+import '../widgets/court_settings_bottom_sheet.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -34,6 +35,23 @@ class _HomeViewState extends State<HomeView> {
   void dispose() {
     _notifier.stopListening();
     super.dispose();
+  }
+
+  void _showCourtSettings(
+    BuildContext context,
+    String venueId,
+    Map<String, dynamic> venueData,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) =>
+          CourtSettingsBottomSheet(venueId: venueId, venueData: venueData),
+    );
   }
 
   @override
@@ -298,6 +316,30 @@ class _HomeViewState extends State<HomeView> {
                                     'View',
                                     style: TextStyle(fontSize: 13),
                                   ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              SizedBox(
+                                width: 40,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    _showCourtSettings(
+                                      context,
+                                      venues[index].id,
+                                      venue,
+                                    );
+                                  },
+                                  child: const Icon(Icons.settings, size: 16),
                                 ),
                               ),
                               const SizedBox(width: 4),
