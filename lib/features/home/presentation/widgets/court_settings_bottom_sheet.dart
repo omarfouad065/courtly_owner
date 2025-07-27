@@ -45,8 +45,8 @@ class CourtSettingsBottomSheet extends StatelessWidget {
                   children: [
                     CourtSettingsListTile(
                       icon: Icons.edit,
-                      title: 'Edit Court',
-                      subtitle: 'Modify court details and information',
+                      title: 'Edit Court Info',
+                      subtitle: 'Modify court name, address, and description',
                       onTap: () {
                         Navigator.pop(context);
                         Navigator.push(
@@ -62,52 +62,40 @@ class CourtSettingsBottomSheet extends StatelessWidget {
                     ),
                     CourtSettingsListTile(
                       icon: Icons.photo_library,
-                      title: 'Manage Images',
+                      title: 'Edit Images',
                       subtitle: 'Add, remove, or reorder court images',
                       onTap: () {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Image management coming soon!'),
-                          ),
-                        );
-                      },
-                    ),
-                    CourtSettingsListTile(
-                      icon: Icons.schedule,
-                      title: 'Availability Settings',
-                      subtitle: 'Set court availability and time slots',
-                      onTap: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Availability settings coming soon!'),
+                            content: Text('Image editing coming soon!'),
                           ),
                         );
                       },
                     ),
                     CourtSettingsListTile(
                       icon: Icons.attach_money,
-                      title: 'Pricing Settings',
+                      title: 'Edit Pricing',
                       subtitle: 'Update hourly, daily, and weekly rates',
                       onTap: () {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Pricing settings coming soon!'),
+                            content: Text('Pricing editing coming soon!'),
                           ),
                         );
                       },
                     ),
                     CourtSettingsListTile(
-                      icon: Icons.analytics,
-                      title: 'View Analytics',
-                      subtitle: 'Check booking statistics and revenue',
+                      icon: Icons.fitness_center,
+                      title: 'Edit Facilities',
+                      subtitle:
+                          'Manage cafe, parking, lighting, and other amenities',
                       onTap: () {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Analytics coming soon!'),
+                            content: Text('Facilities editing coming soon!'),
                           ),
                         );
                       },
