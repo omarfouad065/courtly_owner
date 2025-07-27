@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../views/court_management_view.dart';
+import '../views/edit_court_info_view.dart';
+import '../views/edit_images_view.dart';
+import '../views/edit_pricing_view.dart';
+import '../views/edit_facilities_view.dart';
 
 class CourtSettingsBottomSheet extends StatelessWidget {
   final String venueId;
@@ -52,7 +56,7 @@ class CourtSettingsBottomSheet extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => CourtManagementView(
+                            builder: (context) => EditCourtInfoView(
                               venueId: venueId,
                               venueData: venueData,
                             ),
@@ -66,9 +70,13 @@ class CourtSettingsBottomSheet extends StatelessWidget {
                       subtitle: 'Add, remove, or reorder court images',
                       onTap: () {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Image editing coming soon!'),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditImagesView(
+                              venueId: venueId,
+                              venueData: venueData,
+                            ),
                           ),
                         );
                       },
@@ -79,9 +87,13 @@ class CourtSettingsBottomSheet extends StatelessWidget {
                       subtitle: 'Update hourly, daily, and weekly rates',
                       onTap: () {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Pricing editing coming soon!'),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditPricingView(
+                              venueId: venueId,
+                              venueData: venueData,
+                            ),
                           ),
                         );
                       },
@@ -93,9 +105,13 @@ class CourtSettingsBottomSheet extends StatelessWidget {
                           'Manage cafe, parking, lighting, and other amenities',
                       onTap: () {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Facilities editing coming soon!'),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditFacilitiesView(
+                              venueId: venueId,
+                              venueData: venueData,
+                            ),
                           ),
                         );
                       },
