@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../views/court_management_view.dart';
 import '../views/edit_court_info_view.dart';
 import '../views/edit_images_view.dart';
 import '../views/edit_pricing_view.dart';
