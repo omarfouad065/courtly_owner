@@ -7,6 +7,8 @@ import 'package:geolocator/geolocator.dart';
 import 'dart:io';
 import '../../../../core/services/supabase_service.dart';
 import '../../../../core/widgets/image_picker_widget.dart';
+import '../../../../core/constants/app_colors.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class AddCourtView extends StatefulWidget {
   const AddCourtView({super.key});
@@ -25,6 +27,14 @@ class _AddCourtViewState extends State<AddCourtView> {
   final TextEditingController _hourlyController = TextEditingController();
   final TextEditingController _dailyController = TextEditingController();
   final TextEditingController _weeklyController = TextEditingController();
+
+  // Contact Information
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _whatsappController = TextEditingController();
+  final TextEditingController _facebookController = TextEditingController();
+  final TextEditingController _instagramController = TextEditingController();
+  final TextEditingController _twitterController = TextEditingController();
 
   // Facilities
   bool _cafe = false;
@@ -144,6 +154,12 @@ class _AddCourtViewState extends State<AddCourtView> {
     _dailyController.dispose();
     _weeklyController.dispose();
     _maxPlayersController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _whatsappController.dispose();
+    _facebookController.dispose();
+    _instagramController.dispose();
+    _twitterController.dispose();
     super.dispose();
   }
 
@@ -194,6 +210,14 @@ class _AddCourtViewState extends State<AddCourtView> {
               : null,
           'category': _selectedCategory,
           'description': _descriptionController.text.trim(),
+          'contact': {
+            'phone': _phoneController.text.trim(),
+            'email': _emailController.text.trim(),
+            'whatsapp': _whatsappController.text.trim(),
+            'facebook': _facebookController.text.trim(),
+            'instagram': _instagramController.text.trim(),
+            'twitter': _twitterController.text.trim(),
+          },
           'availability': _availability.map(
             (day, slots) => MapEntry(
               day,
@@ -448,6 +472,419 @@ class _AddCourtViewState extends State<AddCourtView> {
                 decoration: const InputDecoration(labelText: 'Weekly'),
                 keyboardType: TextInputType.number,
                 validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 24),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.surface, AppColors.surfaceLight],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.primary, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.shadow,
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.primary,
+                                AppColors.primaryLight,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const FaIcon(
+                            FontAwesomeIcons.addressBook,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        const Text(
+                          'Contact Information',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          FaIcon(
+                            FontAwesomeIcons.infoCircle,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Help customers reach you easily and stay connected',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textSecondary,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _phoneController,
+                      decoration: InputDecoration(
+                        labelText: 'Phone Number',
+                        hintText: 'Enter your primary contact number',
+                        prefixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: FaIcon(
+                            FontAwesomeIcons.phone,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
+                            width: 2,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: AppColors.surface,
+                        labelStyle: TextStyle(color: AppColors.textSecondary),
+                        hintStyle: TextStyle(color: AppColors.textDisabled),
+                      ),
+                      style: TextStyle(color: AppColors.textPrimary),
+                      keyboardType: TextInputType.phone,
+                      validator: (v) =>
+                          v == null || v.isEmpty ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        labelText: 'Email Address (Optional)',
+                        hintText: 'Enter your business email address',
+                        prefixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: FaIcon(
+                            FontAwesomeIcons.envelope,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
+                            width: 2,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: AppColors.surface,
+                        labelStyle: TextStyle(color: AppColors.textSecondary),
+                        hintStyle: TextStyle(color: AppColors.textDisabled),
+                      ),
+                      style: TextStyle(color: AppColors.textPrimary),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (v) {
+                        if (v == null || v.isEmpty)
+                          return null; // Make email optional
+                        if (!RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        ).hasMatch(v)) {
+                          return 'Please enter a valid email';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _whatsappController,
+                      decoration: InputDecoration(
+                        labelText: 'WhatsApp Number (Optional)',
+                        hintText: 'Enter your WhatsApp business number',
+                        prefixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: FaIcon(
+                            FontAwesomeIcons.whatsapp,
+                            color: Colors.green,
+                            size: 20,
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.green, width: 2),
+                        ),
+                        filled: true,
+                        fillColor: AppColors.surface,
+                        labelStyle: TextStyle(color: AppColors.textSecondary),
+                        hintStyle: TextStyle(color: AppColors.textDisabled),
+                      ),
+                      style: TextStyle(color: AppColors.textPrimary),
+                      keyboardType: TextInputType.phone,
+                      validator: (v) {
+                        if (v != null && v.isNotEmpty) {
+                          if (!RegExp(r'^\+?[\d\s-]+$').hasMatch(v)) {
+                            return 'Please enter a valid WhatsApp number';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: FaIcon(
+                            FontAwesomeIcons.shareNodes,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Social Media Links',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _facebookController,
+                      decoration: InputDecoration(
+                        labelText: 'Facebook Page (Optional)',
+                        hintText: 'https://www.facebook.com/yourcourtpage',
+                        prefixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: FaIcon(
+                            FontAwesomeIcons.facebook,
+                            color: Colors.blue,
+                            size: 20,
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.blue, width: 2),
+                        ),
+                        filled: true,
+                        fillColor: AppColors.surface,
+                        labelStyle: TextStyle(color: AppColors.textSecondary),
+                        hintStyle: TextStyle(color: AppColors.textDisabled),
+                      ),
+                      style: TextStyle(color: AppColors.textPrimary),
+                      keyboardType: TextInputType.url,
+                      validator: (v) {
+                        if (v != null && v.isNotEmpty) {
+                          if (!RegExp(r'^https?://.*').hasMatch(v)) {
+                            return 'Please enter a valid URL starting with http:// or https://';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _instagramController,
+                      decoration: InputDecoration(
+                        labelText: 'Instagram Profile (Optional)',
+                        hintText: 'https://www.instagram.com/yourcourtprofile',
+                        prefixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: FaIcon(
+                            FontAwesomeIcons.instagram,
+                            color: Colors.purple,
+                            size: 20,
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: Colors.purple,
+                            width: 2,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: AppColors.surface,
+                        labelStyle: TextStyle(color: AppColors.textSecondary),
+                        hintStyle: TextStyle(color: AppColors.textDisabled),
+                      ),
+                      style: TextStyle(color: AppColors.textPrimary),
+                      keyboardType: TextInputType.url,
+                      validator: (v) {
+                        if (v != null && v.isNotEmpty) {
+                          if (!RegExp(r'^https?://.*').hasMatch(v)) {
+                            return 'Please enter a valid URL starting with http:// or https://';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _twitterController,
+                      decoration: InputDecoration(
+                        labelText: 'Twitter/X Profile (Optional)',
+                        hintText: 'https://www.twitter.com/yourcourtprofile',
+                        prefixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.lightBlue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: FaIcon(
+                            FontAwesomeIcons.xTwitter,
+                            color: Colors.lightBlue,
+                            size: 20,
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: Colors.lightBlue,
+                            width: 2,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: AppColors.surface,
+                        labelStyle: TextStyle(color: AppColors.textSecondary),
+                        hintStyle: TextStyle(color: AppColors.textDisabled),
+                      ),
+                      style: TextStyle(color: AppColors.textPrimary),
+                      keyboardType: TextInputType.url,
+                      validator: (v) {
+                        if (v != null && v.isNotEmpty) {
+                          if (!RegExp(r'^https?://.*').hasMatch(v)) {
+                            return 'Please enter a valid URL starting with http:// or https://';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
               SizedBox(
