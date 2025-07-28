@@ -95,21 +95,84 @@ class BookingStatusNotifier {
         });
   }
 
-  void _listenToApprovals(List<QueryDocumentSnapshot> docs) {
+  void _listenToApprovals(List<QueryDocumentSnapshot> docs) async {
     for (final doc in docs) {
       final data = doc.data() as Map<String, dynamic>;
       final approved = data['approved'] == true;
       final venueId = doc.id;
-      final lastApproved = _lastApprovalStatus[venueId] ?? false;
-      if (!lastApproved && approved) {
-        // Approval just changed to true
+
+      // Check if we've already sent a notification for this approval
+      // We'll use a field in the venue document itself to track this
+      final hasNotificationBeenSent = data['approvalNotificationSent'] == true;
+
+      // Only send notification if:
+      // 1. Court is approved
+      // 2. We haven't sent a notification for this approval yet
+      if (approved && !hasNotificationBeenSent) {
         final courtName = data['name'] ?? 'Court';
+        print(
+          'Sending approval notification for court: $courtName (ID: $venueId)',
+        );
         _showApprovalNotification(courtName);
         _writeNotificationToFirestore(
           'Your court "$courtName" has been approved!',
         );
+
+        // Mark that we've sent a notification for this approval
+        // Update the venue document to track this
+        await FirebaseFirestore.instance
+            .collection('venues')
+            .doc(venueId)
+            .update({
+              'approvalNotificationSent': true,
+              'approvalNotificationTimestamp': FieldValue.serverTimestamp(),
+            });
+      } else if (approved && hasNotificationBeenSent) {
+        print(
+          'Skipping approval notification for court ID: $venueId (already sent)',
+        );
+      } else if (!approved && hasNotificationBeenSent) {
+        // If court is no longer approved, reset the notification status
+        // so that if it gets approved again, we can send a new notification
+        print(
+          'Resetting approval notification status for court ID: $venueId (no longer approved)',
+        );
+        await FirebaseFirestore.instance
+            .collection('venues')
+            .doc(venueId)
+            .update({
+              'approvalNotificationSent': false,
+              'approvalNotificationTimestamp': null,
+            });
       }
+
       _lastApprovalStatus[venueId] = approved;
+    }
+  }
+
+  /// Reset approval notification status for a specific venue
+  /// This can be useful for testing or if you want to resend notifications
+  Future<void> resetApprovalNotification(String venueId) async {
+    await FirebaseFirestore.instance.collection('venues').doc(venueId).update({
+      'approvalNotificationSent': false,
+      'approvalNotificationTimestamp': null,
+    });
+  }
+
+  /// Reset all approval notifications for the current user's venues
+  Future<void> resetAllApprovalNotifications() async {
+    if (_ownerId == null) return;
+
+    final venuesRef = FirebaseFirestore.instance
+        .collection('venues')
+        .where('ownerId', isEqualTo: _ownerId);
+
+    final snapshot = await venuesRef.get();
+    for (final doc in snapshot.docs) {
+      await doc.reference.update({
+        'approvalNotificationSent': false,
+        'approvalNotificationTimestamp': null,
+      });
     }
   }
 
