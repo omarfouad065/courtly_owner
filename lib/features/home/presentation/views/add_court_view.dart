@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geolocator/geolocator.dart';
 import 'dart:io';
 import '../../../../core/services/supabase_service.dart';
 import '../../../../core/widgets/image_picker_widget.dart';
@@ -80,6 +82,56 @@ class _AddCourtViewState extends State<AddCourtView> {
   ];
 
   LatLng? _pickedLocation;
+
+  Future<void> _pickLocation() async {
+    // Check location permissions
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permission denied')),
+        );
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Location permissions are permanently denied'),
+        ),
+      );
+      return;
+    }
+
+    // Get current location as starting point
+    Position? currentPosition;
+    try {
+      currentPosition = await Geolocator.getCurrentPosition();
+    } catch (e) {
+      // If we can't get current position, use a default location
+      currentPosition = null;
+    }
+
+    final LatLng initialLocation = currentPosition != null
+        ? LatLng(currentPosition.latitude, currentPosition.longitude)
+        : const LatLng(37.422, -122.084); // Default to a location
+
+    final LatLng? result = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            LocationPickerDialog(initialLocation: initialLocation),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _pickedLocation = result;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -219,28 +271,86 @@ class _AddCourtViewState extends State<AddCourtView> {
               ),
               // Location Picker
               const SizedBox(height: 16),
-              const Text('Location'),
-              Row(
-                children: [
-                  ElevatedButton(
-                    onPressed: () async {
-                      // TODO: Implement Google Maps picker
-                      // For now, set a dummy location
-                      setState(() {
-                        _pickedLocation = const LatLng(37.422, -122.084);
-                      });
-                    },
-                    child: const Text('Pick Location'),
+              const Text(
+                'Location',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              if (_pickedLocation == null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _pickedLocation == null
-                          ? 'No location selected'
-                          : 'Lat: 	${_pickedLocation!.latitude}, Lng: ${_pickedLocation!.longitude}',
-                    ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        color: Colors.grey[600],
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'No location selected',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      ),
+                    ],
                   ),
-                ],
+                )
+              else
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.location_on,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Location Selected',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _pickLocation,
+                  icon: const Icon(Icons.location_on),
+                  label: Text(
+                    _pickedLocation == null
+                        ? 'Pick Location'
+                        : 'Update Location',
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ),
               // Category Dropdown
               const SizedBox(height: 16),
@@ -350,6 +460,137 @@ class _AddCourtViewState extends State<AddCourtView> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class LocationPickerDialog extends StatefulWidget {
+  final LatLng initialLocation;
+
+  const LocationPickerDialog({super.key, required this.initialLocation});
+
+  @override
+  State<LocationPickerDialog> createState() => _LocationPickerDialogState();
+}
+
+class _LocationPickerDialogState extends State<LocationPickerDialog> {
+  late MapController _mapController;
+  late LatLng _selectedLocation;
+  List<Marker> _markers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController = MapController();
+    _selectedLocation = widget.initialLocation;
+    _updateMarkers();
+  }
+
+  void _updateMarkers() {
+    _markers = [
+      Marker(
+        point: _selectedLocation,
+        width: 40,
+        height: 40,
+        child: const Icon(Icons.location_on, color: Colors.red, size: 40),
+      ),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Pick Location')),
+      body: Stack(
+        children: [
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: widget.initialLocation,
+              initialZoom: 15.0,
+              onTap: (tapPosition, point) {
+                setState(() {
+                  _selectedLocation = point;
+                  _updateMarkers();
+                });
+              },
+            ),
+            children: [
+              TileLayer(
+                urlTemplate:
+                    "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+                subdomains: ['a', 'b', 'c', 'd'],
+                userAgentPackageName: 'com.example.courtly_owner',
+              ),
+              MarkerLayer(markers: _markers),
+            ],
+          ),
+          // Current location button
+          Positioned(
+            top: 20,
+            right: 20,
+            child: FloatingActionButton.small(
+              onPressed: () async {
+                try {
+                  final position = await Geolocator.getCurrentPosition();
+                  setState(() {
+                    _selectedLocation = LatLng(
+                      position.latitude,
+                      position.longitude,
+                    );
+                    _mapController.move(_selectedLocation, 15.0);
+                    _updateMarkers();
+                  });
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Could not get current location'),
+                    ),
+                  );
+                }
+              },
+              child: const Icon(Icons.my_location),
+            ),
+          ),
+
+          // Bottom info panel
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Lat: ${_selectedLocation.latitude.toStringAsFixed(6)}',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  Text(
+                    'Lng: ${_selectedLocation.longitude.toStringAsFixed(6)}',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          Navigator.pop(context, _selectedLocation),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Confirm Location'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
