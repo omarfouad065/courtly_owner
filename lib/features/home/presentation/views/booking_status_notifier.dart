@@ -65,13 +65,14 @@ class BookingStatusNotifier {
                 .toLowerCase();
             final bookingId = doc.id;
             final lastStatus = _lastStatuses[bookingId];
-            if (lastStatus != null &&
-                lastStatus == 'pending' &&
-                status == 'confirmed') {
+
+            // Handle different booking status changes
+            if (lastStatus != null && lastStatus != status) {
               final venueId = data['venueId'] as String?;
               final userId = data['userId'] as String?;
               String courtName = 'Court';
               String userName = 'A user';
+
               if (venueId != null && _venueNames.containsKey(venueId)) {
                 courtName = _venueNames[venueId]!;
               }
@@ -85,14 +86,99 @@ class BookingStatusNotifier {
                   userName = userData['name'] ?? userName;
                 }
               }
-              final message =
-                  '$userName has a confirmed booking for $courtName.';
-              _showBookingConfirmedNotification(courtName, userName);
-              _writeNotificationToFirestore(message);
+
+              // Handle different status changes
+              if (lastStatus == 'pending' && status == 'confirmed') {
+                final message =
+                    '$userName has a confirmed booking for $courtName.';
+                _showBookingConfirmedNotification(courtName, userName);
+                _writeNotificationToFirestore(message, 'booking_confirmed');
+              } else if (lastStatus == 'confirmed' && status == 'cancelled') {
+                final message =
+                    '$userName cancelled their booking for $courtName.';
+                _showBookingCancelledNotification(courtName, userName);
+                _writeNotificationToFirestore(message, 'booking_cancelled');
+              } else if (lastStatus == 'pending' && status == 'cancelled') {
+                final message =
+                    '$userName cancelled their pending booking for $courtName.';
+                _showBookingCancelledNotification(courtName, userName);
+                _writeNotificationToFirestore(message, 'booking_cancelled');
+              }
             }
             _lastStatuses[bookingId] = status;
           }
         });
+  }
+
+  /// Send daily booking summary notification
+  Future<void> sendDailyBookingSummary() async {
+    if (_ownerId == null || _venueIds.isEmpty) return;
+
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    int totalBookings = 0;
+    double totalRevenue = 0;
+    Map<String, int> bookingsPerCourt = {};
+
+    for (final venueId in _venueIds) {
+      final bookingsRef = FirebaseFirestore.instance
+          .collection('bookings')
+          .where('venueId', isEqualTo: venueId)
+          .where(
+            'startTime',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
+          )
+          .where('startTime', isLessThan: Timestamp.fromDate(endOfDay))
+          .where('status', isEqualTo: 'confirmed');
+
+      final snapshot = await bookingsRef.get();
+      final courtName = _venueNames[venueId] ?? 'Court';
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        totalBookings++;
+        final amount = data['totalAmount'] ?? 0;
+        if (amount is int) {
+          totalRevenue += amount.toDouble();
+        } else if (amount is double) {
+          totalRevenue += amount;
+        }
+        bookingsPerCourt[courtName] = (bookingsPerCourt[courtName] ?? 0) + 1;
+      }
+    }
+
+    if (totalBookings > 0) {
+      final message =
+          'Today: $totalBookings bookings, EGP ${totalRevenue.toStringAsFixed(2)} revenue';
+      _showDailySummaryNotification(totalBookings, totalRevenue);
+      _writeNotificationToFirestore(message, 'daily_summary');
+    }
+  }
+
+  /// Send payment confirmation notification
+  Future<void> sendPaymentConfirmation(
+    String bookingId,
+    double amount,
+    String courtName,
+  ) async {
+    final message =
+        'Payment received: EGP ${amount.toStringAsFixed(2)} for $courtName';
+    _showPaymentNotification(amount, courtName);
+    _writeNotificationToFirestore(message, 'payment_received');
+  }
+
+  /// Send review notification
+  Future<void> sendReviewNotification(
+    String courtName,
+    double rating,
+    String reviewText,
+  ) async {
+    final message =
+        'New review for $courtName: ${rating.toStringAsFixed(1)} stars';
+    _showReviewNotification(courtName, rating);
+    _writeNotificationToFirestore(message, 'new_review');
   }
 
   void _listenToApprovals(List<QueryDocumentSnapshot> docs) async {
@@ -116,6 +202,7 @@ class BookingStatusNotifier {
         _showApprovalNotification(courtName);
         _writeNotificationToFirestore(
           'Your court "$courtName" has been approved!',
+          'court_approved',
         );
 
         // Mark that we've sent a notification for this approval
@@ -176,6 +263,74 @@ class BookingStatusNotifier {
     }
   }
 
+  /// Schedule daily summary notifications
+  /// Call this method to set up daily summary notifications
+  Future<void> scheduleDailySummaries() async {
+    // This would typically be called once when the app starts
+    // In a real app, you might use a background task or cloud function
+    // For now, we'll just set up the structure
+    print('Daily summary notifications scheduled');
+  }
+
+  /// Manually trigger a daily summary (for testing)
+  Future<void> triggerDailySummary() async {
+    await sendDailyBookingSummary();
+  }
+
+  /// Send a test notification (for debugging)
+  Future<void> sendTestNotification(String message) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'test_channel',
+          'Test Notifications',
+          channelDescription: 'Notification channel for testing',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: false,
+        );
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    );
+    await _notificationsPlugin.show(
+      999,
+      'Test Notification',
+      message,
+      platformChannelSpecifics,
+      payload: 'test',
+    );
+  }
+
+  /// Get notification statistics for the current user
+  Future<Map<String, dynamic>> getNotificationStats() async {
+    if (_ownerId == null) return {};
+
+    final notificationsRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(_ownerId)
+        .collection('notifications');
+
+    final snapshot = await notificationsRef.get();
+    final notifications = snapshot.docs;
+
+    Map<String, int> typeCounts = {};
+    int totalUnread = 0;
+
+    for (final doc in notifications) {
+      final data = doc.data() as Map<String, dynamic>;
+      final type = data['type'] ?? 'general';
+      final read = data['read'] ?? false;
+
+      typeCounts[type] = (typeCounts[type] ?? 0) + 1;
+      if (!read) totalUnread++;
+    }
+
+    return {
+      'total': notifications.length,
+      'unread': totalUnread,
+      'byType': typeCounts,
+    };
+  }
+
   void stopListening() {
     _bookingSubscription?.cancel();
     _bookingSubscription = null;
@@ -230,7 +385,104 @@ class BookingStatusNotifier {
     );
   }
 
-  Future<void> _writeNotificationToFirestore(String message) async {
+  Future<void> _showBookingCancelledNotification(
+    String courtName,
+    String userName,
+  ) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'booking_channel',
+          'Booking Notifications',
+          channelDescription: 'Notification channel for booking updates',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: false,
+        );
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    );
+    await _notificationsPlugin.show(
+      2,
+      'Booking Cancelled',
+      '$userName cancelled their booking for $courtName.',
+      platformChannelSpecifics,
+      payload: 'booking_cancelled',
+    );
+  }
+
+  Future<void> _showDailySummaryNotification(
+    int totalBookings,
+    double totalRevenue,
+  ) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'summary_channel',
+          'Summary Notifications',
+          channelDescription: 'Notification channel for daily summaries',
+          importance: Importance.none,
+          priority: Priority.low,
+          showWhen: false,
+        );
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    );
+    await _notificationsPlugin.show(
+      3,
+      'Daily Summary',
+      'Today: $totalBookings bookings, EGP ${totalRevenue.toStringAsFixed(2)} revenue',
+      platformChannelSpecifics,
+      payload: 'daily_summary',
+    );
+  }
+
+  Future<void> _showPaymentNotification(double amount, String courtName) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'payment_channel',
+          'Payment Notifications',
+          channelDescription: 'Notification channel for payment updates',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: false,
+        );
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    );
+    await _notificationsPlugin.show(
+      4,
+      'Payment Received!',
+      'EGP ${amount.toStringAsFixed(2)} received for $courtName',
+      platformChannelSpecifics,
+      payload: 'payment_received',
+    );
+  }
+
+  Future<void> _showReviewNotification(String courtName, double rating) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'review_channel',
+          'Review Notifications',
+          channelDescription: 'Notification channel for review updates',
+          importance: Importance.none,
+          priority: Priority.low,
+          showWhen: false,
+        );
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    );
+    await _notificationsPlugin.show(
+      5,
+      'New Review!',
+      '$courtName received a ${rating.toStringAsFixed(1)} star review',
+      platformChannelSpecifics,
+      payload: 'new_review',
+    );
+  }
+
+  Future<void> _writeNotificationToFirestore(
+    String message, [
+    String? type,
+  ]) async {
     if (_ownerId == null) return;
     final notificationsRef = FirebaseFirestore.instance
         .collection('users')
@@ -240,6 +492,7 @@ class BookingStatusNotifier {
       'message': message,
       'timestamp': FieldValue.serverTimestamp(),
       'read': false,
+      'type': type ?? 'general',
     });
   }
 }
